@@ -1,0 +1,19 @@
+{
+  "name": "rest-rooms-around",
+  "version": "0.0.1",
+  "authors": [
+    "Taranjeet <reachtotj@gmail.com>"
+  ],
+  "description": "Mark your current location and see the rest rooms around you",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.5"
+  }
+}

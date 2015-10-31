@@ -1,0 +1,5 @@
+pyenv/*
+db.sqlite*
+static/
+*.pyc
+restroomsaround/static/
