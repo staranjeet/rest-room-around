@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block custom_css %}
+	<style>
+		#map {
+		width: auto;
+		height: 400px;
+		}
+
+		ul{
+			list-style-type:none;
+		}
+	</style>
+{% endblock %}
+
+{% block custom_javascript %}
+
+	<script src="https://maps.googleapis.com/maps/api/js"></script>
+
+	<script>
+
+		var marker, map;
+
+		var circle ={
+			path: google.maps.SymbolPath.CIRCLE,
+			fillColor: 'green',
+			fillOpacity: .9,
+			scale: 4.5,
+			strokeColor: 'green',
+			strokeWeight: 1
+		};
+
+	 	function initialize(){
+
+			var mapCanvas = document.getElementById('map');
+			var mapOptions = {
+				center: new google.maps.LatLng(44.5403, -78.5463),
+				zoom: 12,
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			}
+			map = new google.maps.Map(mapCanvas, mapOptions);
+			console.log(map);
+			getCurrentLocation();
+
+	 	}
+
+	 	function getCurrentLocation(){
+
+	 		if(navigator.geolocation){
+	 			navigator.geolocation.getCurrentPosition(function(position){
+	 				var pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+	 				marker = new google.maps.Marker({
+	 					position: pos,
+	 					draggable: true,
+	 					animation: google.maps.Animation.DROP,
+	 					map: map
+	 				});
+	 				map.setCenter(pos);
+	 				updatePositionAsMarkerMoves();
+
+	 				google.maps.event.addListener(marker, 'click', function(event){
+	 						updatePositionAsMarkerMoves();
+	 				});
+
+	 				google.maps.event.addListener(marker, 'dragend', function(event){
+	 						updatePositionAsMarkerMoves();
+	 				});
+	 			});
+	 		} else {
+	 			console.log('HTML 5 not supported');
+	 		}
+
+	 	}
+
+	 	function getMarkerPosition(){
+	 		var currentPos = marker.getPosition();
+	 		return [currentPos.lat(), currentPos.lng()]
+	 	}
+
+	 	function updatePositionAsMarkerMoves(){
+
+	 		var currentPos = getMarkerPosition();
+	 		var currentLat = currentPos[0];
+	 		var currentLng = currentPos[1];
+
+	 		var latLng = new google.maps.LatLng(currentLat, currentLng);
+	 		var geocoder = new google.maps.Geocoder();
+
+	 		geocoder.geocode({'latLng':latLng}, function(results, status){
+	 			if(status == google.maps.GeocoderStatus.OK){
+	 				if(results[0]){
+	 					var address = results[0].formatted_address;
+	 					$('#id_address').val(address);
+	 				}
+	 			}
+	 		});
+
+	 		fetchNearByLocs(currentLat, currentLng);
+	 	}
+
+	 	function setPosition(currentLat, currentLng){
+
+	 		$('#id_lat').val(currentLat);
+			$('#id_lng').val(currentLng);
+
+	 	}
+
+	 	function saveLocation(){
+
+	 		$('#saveButton').html('<i class="fa fa-spinner fa-spin"></i>&nbsp;Saving')
+	 		var currentPos = getMarkerPosition();
+	 		var currentLat = currentPos[0];
+	 		var currentLng = currentPos[1];
+
+			setPosition(currentLat, currentLng);
+
+	 		$.ajax({
+	 			url: 'location/save/',
+	 			type: 'post',
+	 			data: $('#locationForm').serialize(),
+	 			success: function(data){
+	 				console.log('success');
+	 				$('#saveButton').html('Save&nbsp;<i class="fa fa-floppy-o">');
+	 				$('#alertDiv').addClass(data.cls);
+	 				$('#alertDiv').show();
+	 				$('#helpMsg').text(data.msg);
+	 			},
+	 			error: function(err, textStatus, errThrown){
+	 				console.log('error in saving location');
+	 			}
+	 		});
+	 	}
+
+	 	function fetchNearByLocs(currentLat, currentLng){
+
+			$('#progressBar').show();
+
+			setPosition(currentLat, currentLng);
+
+	 		$.ajax({
+	 			url: 'location/nearby/',
+	 			type: 'get',
+	 			data: $('#locationForm').serialize(),
+	 			success: function(data){
+	 				console.log('success');
+	 				$('#progressBar').hide();
+	 				$('#placesDiv').empty();
+	 				$('#placesDiv').html(data.points);
+	 				var markerData = $.parseHTML(data.points)[1];
+	 				$(markerData).find('li').each(function(i,c){
+
+	 					var latitude = $(c).find('.latitude').text();
+	 					var longitude = $(c).find('.longitude').text();
+	 					var name = $(c).text();
+	 					new google.maps.Marker({
+							position: new google.maps.LatLng(latitude, longitude),
+							map: map,
+							icon: circle,
+							title: name,
+						});
+					});
+				},
+				error: function(err, textStatus, errThrown){
+					console.log('error');
+				}
+			});
+		}
+
+	 	google.maps.event.addDomListener(window, 'load', initialize);
+	</script>
+
+{% endblock %}
+
+{% block container %}
+
+	<div class="row">
+		<div class="col-sm-5 col-sm-offset-1">
+			<div class="alert alert-dismissible" role="alert" id="alertDiv" style="display:none;">
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<p class="text-left" id="helpMsg"></p>
+			</div>
+		</div>
+		<div class="col-sm-6">
+			<div class="progress" id="progressBar" style="display:none;">
+				<div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;" >
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-sm-6 col-sm-offset-1">
+			<div id="map">
+			</div>
+		</div>
+		<div class="col-sm-5">
+			<h3>Nearby Places</h3>
+			<div id="placesDiv"></div>
+		</div>
+	</div>
+
+	<div class="row" style="padding-top:10px;">
+		<form id="locationForm">
+			<div class="col-sm-5 col-sm-offset-1">
+				{{form.address}}
+			</div>
+	</div>
+
+	<div class="row" style="padding-top:10px;">
+		<div class="col-sm-2 col-sm-offset-1">
+			{{form.lat}}
+		</div>
+		<div class="col-sm-2">
+			{{form.lng}}
+		</div>
+		<div class="col-sm-1">
+			<button type="button" class="btn btn-success" onclick="saveLocation();" id="saveButton">
+				Save&nbsp;<i class="fa fa-floppy-o"></i>
+			</button>
+		</div>
+		</form>
+	</div>
+
+{% endblock %}
