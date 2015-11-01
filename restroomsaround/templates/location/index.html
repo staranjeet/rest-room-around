@@ -124,6 +124,7 @@
 	 				$('#alertDiv').addClass(data.cls);
 	 				$('#alertDiv').show();
 	 				$('#helpMsg').text(data.msg);
+	 				fetchNearByLocs(currentLat, currentLng);
 	 			},
 	 			error: function(err, textStatus, errThrown){
 	 				console.log('error in saving location');
