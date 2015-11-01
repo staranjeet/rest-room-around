@@ -87,13 +87,15 @@ WSGI_APPLICATION = 'restroomsaround.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
+
+#openshift
 if 'OPENSHIFT_POSTGRESQL_DB_URL' in os.environ:
 	DATABASES = {
 	'default': {
 		'ENGINE': 'django.contrib.gis.db.backends.postgis',
 		'NAME': os.environ['OPENSHIFT_APP_NAME'],
-		'USER': 'adminryuszig',
-		'PASSWORD': "cr3cTKx6FmST",
+		'USER': 'admin',
+		'PASSWORD': "admin",
 		'HOST': os.environ['OPENSHIFT_POSTGRESQL_DB_HOST'],
 		'PORT': os.environ['OPENSHIFT_POSTGRESQL_DB_PORT'],
 		}
